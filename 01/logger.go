@@ -201,34 +201,43 @@ func (l *Logger) getStackTrace() string {
 }
 
 // log performs the actual logging operation
-func (l *Logger) log(level LogLevel, message string) {
+func (l *Logger) log(level LogLevel, message interface{}, args ...interface{}) {
+	var finalMessage string
+	switch msg := message.(type) {
+	case string:
+		if len(args) > 0 {
+			finalMessage = fmt.Sprintf(msg, args...)
+		} else {
+			finalMessage = msg
+		}
+	default:
+		finalMessage = fmt.Sprint(message)
+	}
+
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	location := getLocation()
 	levelStr := getLevelStr(level)
 
-	// Add stack trace if needed
 	var stackTrace string
 	if l.enableStackTrace && level >= l.stackTraceLevel {
 		stackTrace = l.getStackTrace()
 	}
 
-	// Create a colored version for the console
-	coloredLogMessage := fmt.Sprintf("%s[%s]%s %s - %s: %s%s",
+	coloredLogMessage := fmt.Sprintf("%s[%s]%s %s - %s: %s%s\n",
 		getLevelColor(level),
 		levelStr,
 		colorReset,
 		timestamp,
 		location,
-		message,
+		finalMessage,
 		stackTrace,
 	)
 
-	// Create a plain version for the file
-	plainLogMessage := fmt.Sprintf("[%s] %s - %s: %s%s",
+	plainLogMessage := fmt.Sprintf("[%s] %s - %s: %s%s\n",
 		levelStr,
 		timestamp,
 		location,
-		message,
+		finalMessage,
 		stackTrace,
 	)
 
@@ -282,17 +291,20 @@ func getLevelStr(level LogLevel) string {
 	}
 }
 
-// Info logs a message with the INFO level
-func (l *Logger) Info(message string) {
-	l.log(INFO, message)
+// Info logs a message with INFO level
+// It can be used with or without format arguments
+func (l *Logger) Info(message interface{}, args ...interface{}) {
+	l.log(INFO, message, args...)
 }
 
-// Warning logs a message with the WARNING level
-func (l *Logger) Warning(message string) {
-	l.log(WARNING, message)
+// Warning logs a message with WARNING level
+// It can be used with or without format arguments
+func (l *Logger) Warning(message interface{}, args ...interface{}) {
+	l.log(WARNING, message, args...)
 }
 
 // Error logs a message with ERROR level
-func (l *Logger) Error(message string) {
-	l.log(ERROR, message)
+// It can be used with or without format arguments
+func (l *Logger) Error(message interface{}, args ...interface{}) {
+	l.log(ERROR, message, args...)
 }
